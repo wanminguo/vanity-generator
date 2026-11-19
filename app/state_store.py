@@ -8,9 +8,14 @@
 
 import json
 import os
+import sys
 
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
-ROOT_DIR = os.path.dirname(APP_DIR)
+if getattr(sys, "frozen", False):
+    # 打包成 exe 后，数据放在 exe 旁边（绿色版），不写进解包临时目录
+    ROOT_DIR = os.path.dirname(os.path.abspath(sys.executable))
+else:
+    ROOT_DIR = os.path.dirname(APP_DIR)
 
 MAX_RULES = 32
 MAX_RULE_CHARS = 32

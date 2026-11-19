@@ -19,7 +19,12 @@ import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
-GPU_DIR = os.path.join(ROOT, "gpu")
+if getattr(sys, "frozen", False):
+    # 打包后内核源码在 _MEIPASS/gpu
+    GPU_DIR = os.path.join(getattr(sys, "_MEIPASS",
+                                   os.path.dirname(os.path.abspath(sys.executable))), "gpu")
+else:
+    GPU_DIR = os.path.join(ROOT, "gpu")
 for _p in (HERE, GPU_DIR):
     if _p not in sys.path:
         sys.path.append(_p)

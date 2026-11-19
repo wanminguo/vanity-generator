@@ -24,8 +24,14 @@ from datetime import datetime
 from tkinter import filedialog, messagebox
 
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
-ROOT_DIR = os.path.dirname(APP_DIR)
-ENGINE_JS = os.path.join(ROOT_DIR, "engine", "vanity.js")
+if getattr(sys, "frozen", False):
+    # PyInstaller 打包后：只读资源在 _MEIPASS（onefile 解包目录），可写数据放 exe 同目录
+    RES_DIR = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(sys.executable)))
+    ROOT_DIR = os.path.dirname(os.path.abspath(sys.executable))
+else:
+    RES_DIR = os.path.dirname(os.path.abspath(APP_DIR))
+    ROOT_DIR = RES_DIR
+ENGINE_JS = os.path.join(RES_DIR, "engine", "vanity.js")
 
 sys.path.insert(0, APP_DIR)
 import license as lic  # noqa: E402
@@ -374,6 +380,7 @@ def human_target(target):
 
 def resolve_node():
     for path in (
+        os.path.join(RES_DIR, "runtime", "node.exe"),   # 打包时一并打进去的 node
         os.path.join(ROOT_DIR, "runtime", "node.exe"),
         r"C:\Program Files\nodejs\node.exe",
         r"C:\Program Files (x86)\nodejs\node.exe",
@@ -2111,7 +2118,59 @@ class HUDApp:
         return " ".join(parts) if parts else self.t("rule_random")
 
 
+def selftest():
+    """打包自检：不开界面，直接用内置 node 引擎生成 1 条随机地址，
+    结果写到 exe 同目录 selftest.json（验证节点路径、引擎脚本、子进程链路）。"""
+    import json as _json
+    import time as _time
+
+    q = queue.Queue()
+    runner = EngineRunner(q.put)
+    runner.start("eth", "", "", 2, 1)
+    ready = None
+    found = None
+    error = None
+    deadline = _time.time() + 25
+    while _time.time() < deadline:
+        try:
+            ev = q.get(timeout=0.5)
+        except queue.Empty:
+            continue
+        kind = ev.get("t")
+        if kind == "ready":
+            ready = ev
+        elif kind == "found":
+            found = ev
+            break
+        elif kind == "error":
+            error = ev.get("message")
+            break
+    runner.stop()
+    out = {
+        "frozen": bool(getattr(sys, "frozen", False)),
+        "res_dir": RES_DIR,
+        "root_dir": ROOT_DIR,
+        "node": resolve_node(),
+        "engine_js": ENGINE_JS,
+        "engine_js_exists": os.path.isfile(ENGINE_JS),
+        "ready": bool(ready),
+        "gpu_report": (ready or {}).get("gpu"),
+        "address": (found or {}).get("address"),
+        "priv_len": len((found or {}).get("privHex") or ""),
+        "error": error,
+    }
+    path = os.path.join(ROOT_DIR, "selftest.json")
+    try:
+        with open(path, "w", encoding="utf-8") as fh:
+            _json.dump(out, fh, ensure_ascii=False, indent=1)
+    except OSError:
+        pass
+
+
 def main():
+    if "--selftest" in sys.argv:
+        selftest()
+        return
     global SCALE
     if os.name == "nt":
         try:
