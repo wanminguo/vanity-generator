@@ -44,6 +44,9 @@ import qr_code  # noqa: E402  纯标准库二维码，给购买弹窗用
 # 购买授权码的页面（浏览器打开，软件自身不联网）
 BUY_URL_BASE = "https://buy.wanminguo.top/vanity/"
 
+# 购买弹窗里推荐的海外社媒涨粉平台（浏览器打开，软件自身不联网）
+REC_URL = "https://buy.wanminguo.top/plugin/getfollow/overseas-social-fans"
+
 DESIGN_W, DESIGN_H = 980, 872
 CREATE_NO_WINDOW = 0x08000000
 
@@ -180,6 +183,8 @@ I18N = {
         "buy_scan": "手机扫码购买",
         "buy_copied": "链接已复制到剪贴板",
         "buy_hint": "扫码或另存链接到手机也可以直接购买",
+        "rec_title": " // 推荐 · 海外社媒涨粉",
+        "rec_text": "海外社媒涨粉平台：TikTok / Instagram / YouTube / Telegram / Facebook / Spotify 涨粉、播放、点赞、评论。",
         "start_confirm_title": "确认开始生成",
         "cf_rules": "匹配规则",
         "cf_mode": "运算模式",
@@ -292,6 +297,8 @@ I18N = {
         "buy_scan": "SCAN TO BUY",
         "buy_copied": "Link copied to clipboard",
         "buy_hint": "You can also scan / send this link to your phone",
+        "rec_title": " // RECOMMENDED · Social Media Boost",
+        "rec_text": "Overseas social media boost: TikTok / Instagram / YouTube / Telegram / Facebook / Spotify followers, views, likes and comments.",
         "start_confirm_title": "Confirm start",
         "cf_rules": "RULES",
         "cf_mode": "MODE",
@@ -1764,10 +1771,10 @@ class HUDApp:
         top.transient(self.root)
         top.grab_set()
 
-        w, h = 800, 408
+        w, h = 800, 536
         self.root.update_idletasks()
         x = self.root.winfo_rootx() + max(0, (self.root.winfo_width() - w) // 2)
-        y = self.root.winfo_rooty() + 120
+        y = self.root.winfo_rooty() + max(0, (self.root.winfo_height() - h) // 2)
         top.geometry(f"{w}x{h}+{x}+{y}")
 
         wrap = tk.Frame(top, bg=BG, highlightbackground=CYAN_FAINT, highlightthickness=1)
@@ -1799,8 +1806,68 @@ class HUDApp:
         ent.pack(fill="x", ipady=5, pady=(2, 10))
         ent.select_range(0, "end")
 
+        def copy_link():
+            top.clipboard_clear()
+            top.clipboard_append(url)
+            self._toast(self.t("buy_copied"))
+
+        def open_link():
+            try:
+                if hasattr(os, "startfile"):
+                    os.startfile(url)      # 交给系统默认浏览器；本进程不发起任何网络请求
+                else:
+                    copy_link()
+            except Exception:
+                copy_link()
+
+        # 购买链接专属操作按钮，紧跟 // URL
+        buy_btn_row = tk.Frame(left, bg=BG)
+        buy_btn_row.pack(fill="x", pady=(0, 4))
+        tk.Button(buy_btn_row, text=self.t("buy_copy"), command=copy_link, bg=BG, fg=CYAN,
+                  activebackground=BG, activeforeground=CYAN, relief="flat", font=F_BTN_SM,
+                  bd=0, highlightthickness=1, highlightbackground=CYAN_FAINT,
+                  cursor="hand2", width=14).pack(side="left")
+        tk.Button(buy_btn_row, text=self.t("buy_open"), command=open_link, bg=CYAN_FAINT, fg=CYAN,
+                  activebackground=CYAN_DIM, activeforeground="#FFFFFF", relief="flat",
+                  font=F_BTN_SM, bd=0, highlightthickness=0, cursor="hand2",
+                  width=16).pack(side="left", padx=(10, 0))
+
         tk.Label(left, text=self.t("buy_hint"), bg=BG, fg=DIM, font=F_LABEL,
-                 anchor="w").pack(fill="x")
+                 anchor="w").pack(fill="x", pady=(4, 0))
+
+        # 推荐：海外社媒涨粉平台（浏览器打开，软件自身不联网）
+        tk.Frame(left, bg=CYAN_FAINT, height=1).pack(fill="x", pady=(14, 8))
+        tk.Label(left, text=self.t("rec_title"), bg=BG, fg=AMBER,
+                 font=("Consolas", 10, "bold"), anchor="w").pack(fill="x")
+        tk.Label(left, text=self.t("rec_text"), bg=BG, fg=MUTED, font=F_CN_SMALL,
+                 anchor="w", justify="left", wraplength=486).pack(fill="x", pady=(4, 6))
+
+        # 推荐平台完整网址：只读显示，可选中复制，也可一键复制
+        rec_uvar = tk.StringVar(value=REC_URL)
+        rec_ent = tk.Entry(left, textvariable=rec_uvar, bg=PANEL_FILL, fg=CYAN,
+                           relief="flat", font=("Consolas", 10), highlightthickness=1,
+                           highlightbackground=CYAN_FAINT, readonlybackground=PANEL_FILL)
+        rec_ent.configure(state="readonly")
+        rec_ent.pack(fill="x", ipady=5, pady=(2, 4))
+
+        def copy_rec():
+            top.clipboard_clear()
+            top.clipboard_append(REC_URL)
+            self._toast(self.t("buy_copied"))
+
+        def open_rec():
+            self._open_external(REC_URL)
+
+        rec_btn_row = tk.Frame(left, bg=BG)
+        rec_btn_row.pack(fill="x", pady=(0, 4))
+        tk.Button(rec_btn_row, text=self.t("buy_copy"), command=copy_rec, bg=BG, fg=CYAN,
+                  activebackground=BG, activeforeground=CYAN, relief="flat", font=F_BTN_SM,
+                  bd=0, highlightthickness=1, highlightbackground=CYAN_FAINT,
+                  cursor="hand2", width=14).pack(side="left")
+        tk.Button(rec_btn_row, text=self.t("buy_open"), command=open_rec, bg=CYAN_FAINT, fg=CYAN,
+                  activebackground=CYAN_DIM, activeforeground="#FFFFFF", relief="flat",
+                  font=F_BTN_SM, bd=0, highlightthickness=0, cursor="hand2",
+                  width=16).pack(side="left", padx=(10, 0))
 
         # 右侧：二维码（手机直接扫）
         tk.Label(right, text=self.t("buy_scan"), bg=BG, fg=CYAN,
@@ -1814,34 +1881,21 @@ class HUDApp:
         foot = tk.Frame(wrap, bg=BG)
         foot.pack(fill="x", padx=16, pady=(6, 12))
 
-        def copy_link():
-            top.clipboard_clear()
-            top.clipboard_append(url)
-            hint.configure(text=self.t("buy_copied"))
-
-        def open_link():
-            try:
-                if hasattr(os, "startfile"):
-                    os.startfile(url)      # 交给系统默认浏览器；本进程不发起任何网络请求
-                else:
-                    copy_link()
-            except Exception:
-                copy_link()
-
-        tk.Button(foot, text=self.t("buy_copy"), command=copy_link, bg=BG, fg=CYAN,
-                  activebackground=BG, activeforeground=CYAN, relief="flat",
-                  font=F_BTN_SM, bd=0, highlightthickness=1, highlightbackground=CYAN_FAINT,
-                  cursor="hand2", width=14).pack(side="left")
-        tk.Button(foot, text=self.t("buy_open"), command=open_link, bg=CYAN_FAINT, fg=CYAN,
-                  activebackground=CYAN_DIM, activeforeground="#FFFFFF", relief="flat",
-                  font=F_BTN_SM, bd=0, highlightthickness=0, cursor="hand2",
-                  width=16).pack(side="left", padx=(10, 0))
         tk.Button(foot, text=self.t("license_cancel"), command=top.destroy, bg=BG, fg=MUTED,
                   activebackground=BG, activeforeground=CYAN, relief="flat", font=F_BTN_SM,
                   bd=0, highlightthickness=0, cursor="hand2", width=8).pack(side="right")
 
-        hint = tk.Label(foot, text="", bg=BG, fg=GREEN, font=F_LABEL, anchor="e")
-        hint.pack(side="right", padx=(0, 12))
+    def _open_external(self, url):
+        """把链接交给系统默认浏览器；失败则复制到剪贴板。本进程不发任何网络请求。"""
+        try:
+            if hasattr(os, "startfile"):
+                os.startfile(url)
+                return
+            raise RuntimeError("no startfile")
+        except Exception:
+            self.root.clipboard_clear()
+            self.root.clipboard_append(url)
+            self._toast(self.t("buy_copied"))
 
     def _settle_credits(self):
         """开跑即扣，不按结果退次（点开始生成就扣除，中止/失败都不退）"""

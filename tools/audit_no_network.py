@@ -39,7 +39,7 @@ NODE_REQUIRE = re.compile(r"""require\s*\(\s*['"]([^'"]+)['"]\s*\)""")
 NODE_IMPORT = re.compile(r"""import\s+(?:[^'"]*?\s+from\s+)?['"]([^'"]+)['"]""")
 PY_IMPORT = re.compile(r"""^\s*(?:from|import)\s+([A-Za-z_][\w.]*)""", re.MULTILINE)
 
-SKIP_DIRS = {".git", "node_modules", "__pycache__", ".venv", "dist", "build"}
+SKIP_DIRS = {".git", "node_modules", "__pycache__", ".venv", ".build-env", "dist", "build"}
 
 
 def iter_files(root):
